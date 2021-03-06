@@ -187,6 +187,11 @@ bool NACT::handle_platform_event(const SDL_Event& e)
 			SDL_SetWindowFullscreen(g_window, SDL_WINDOW_FULLSCREEN_DESKTOP);
 			ags->flush_screen(true);
 			break;
+		case ID_SCANLINE:
+			ags->set_scanline_mode(!ags->get_scanline_mode());
+			CheckMenuItem(GetMenu(get_hwnd(g_window)), ID_SCANLINE, MF_BYCOMMAND |
+						  ags->get_scanline_mode() ? MFS_CHECKED : MFS_UNCHECKED);
+			break;
 		case ID_SOUND_FM:
 			mako->select_sound(BGM_FM);
 			break;

@@ -40,6 +40,8 @@ BEGIN
     BEGIN
         MENUITEM "Window",                      ID_SCREEN_WINDOW
         MENUITEM "Fullscreen",                  ID_SCREEN_FULL
+        MENUITEM SEPARATOR
+        MENUITEM "Scanline effect",             ID_SCANLINE
     END
     POPUP "Sound"
     BEGIN

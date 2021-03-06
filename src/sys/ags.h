@@ -43,6 +43,7 @@ protected:
 private:
 	SDL_Renderer* sdlRenderer;
 	SDL_Texture* sdlTexture;
+	SDL_Texture* scanline_texture;
 
 	// Surface
 	SDL_Surface* hBmpScreen[3]; // 8bpp * 3 (表, 裏, メニュー)
@@ -136,6 +137,8 @@ public:
 	void load_cursor(int page);
 	void select_cursor();
 
+	bool get_scanline_mode() const { return scanline_texture; }
+	void set_scanline_mode(bool enable);
 	void save_screenshot(const char* path);
 
 	bool dirty;
