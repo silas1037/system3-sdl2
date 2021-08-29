@@ -3,12 +3,12 @@
 #include "utfsjis.h"
 
 namespace {
-#include "s2utbl.h"
+#include "g2utbl.h"
 
 int unicode_to_sjis(int u) {
 	for (int b1 = 0x80; b1 <= 0xff; b1++) {
-		if (b1 >= 0xa0 && b1 <= 0xdf)
-			continue;
+		//if (b1 >= 0xa0 && b1 <= 0xdf)
+		//	continue;
 		for (int b2 = 0x40; b2 <= 0xff; b2++) {
 			if (u == s2u[b1 - 0x80][b2 - 0x40])
 				return b1 << 8 | b2;
