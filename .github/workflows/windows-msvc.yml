@@ -32,6 +32,9 @@ jobs:
     #    name: ${{ matrix.package }}
     #    path: out/artifacts
     
+    - name: runme
+      run: |
+        7z a system3-sdl2.7z out/artifacts
     - uses: "marvinpinto/action-automatic-releases@latest"
       with:
         repo_token: "${{ secrets.GITHUB_TOKEN }}"
@@ -39,4 +42,4 @@ jobs:
         prerelease: true
         title: "Windows Debugger"
         files: |
-          out/artifacts
+          system3-sdl2.7z
