@@ -1,4 +1,1 @@
-out
-android/.gradle
-android/app/.externalNativeBuild
-android/app/build
+*.o

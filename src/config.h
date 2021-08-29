@@ -5,7 +5,8 @@
 
 struct Config {
  public:
-	std::string font_file;
+	std::string font_files[3];
+	std::string vwidth_font_files[3];
 	std::string game_id;
 	std::string save_dir;
 	std::string playlist;

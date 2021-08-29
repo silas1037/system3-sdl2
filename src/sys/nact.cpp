@@ -4,6 +4,7 @@
 	[ NACT ]
 */
 
+#include <cstring>
 #include <stdarg.h>
 #include "nact.h"
 #include "ags.h"
@@ -97,6 +98,11 @@ NACT::NACT(int sys_ver, uint32 crc32_a, uint32 crc32_b, const Config& config)
 	}
 #endif
 
+    x_coord_override = false;
+    if(crc32_a == CRC32_RANCE41_ENG || crc32_a == CRC32_RANCE42_ENG) {
+        x_coord_override = true;
+    }
+
 	terminate = false;
 	restart_after_terminate = false;
 }
@@ -152,7 +158,7 @@ void NACT::execute()
 		opening();
 	}
 
-	// Skip SysEng's "new style" marker
+	// Skip SysEng's deprecated "new style" marker
 	if (scenario_page == 0 && scenario_addr == 2 &&
 		memcmp(&scenario_data[2], "REV", 3) == 0) {
 		scenario_addr = 5;
@@ -551,4 +557,31 @@ NACT* NACT::create(const Config& config) {
 	default:
 		return new NACT_Sys3(crc32_a, crc32_b, config);
 	}
+}
+
+
+// Variable indicies are sometimes referenced (namely in the System 2 V command) in cali format. No existing
+// function requires variable indicies, so we had to create this.
+//
+// As a simplified version of the cali process, it will read the first and sometimes second bytes, then
+// ignore the rest until it sees a cali-ending 0x7F character.
+int NACT::get_var_index() {
+	uint8 dat = getd();
+	int varIndex = -1;
+
+	// Single-byte variable index.
+	if(0x80 <= dat && dat <= 0xbf) {
+		varIndex = dat & 0x3f;
+	}
+	// Double-byte variable index. Ignore other values.
+	else if(0xc0 <= dat && dat <= 0xff) {
+		varIndex = ((dat & 0x3f) << 8) | getd();
+	}
+
+	// Read up to the next 0x7F character.
+	do {
+		dat = getd();
+	} while(dat != 0x7f);
+
+	return varIndex;
 }

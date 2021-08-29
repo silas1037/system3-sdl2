@@ -17,10 +17,10 @@
 #include "msgskip.h"
 #include "crc32.h"
 #include "../fileio.h"
-#include "texthook.h"
+#include "../texthook.h"
 
 // メニューの改ページ
-#define MENU_MAX (crc32_a == CRC32_INTRUDER ? 6 : 11)
+// #define MENU_MAX (crc32_a == CRC32_INTRUDER ? 6 : 11)
 
 #define WAIT(tm) \
 { \
@@ -174,11 +174,11 @@ void NACT_Sys1::cmd_branch()
 				getd();
 				getw();
 			} else if(cmd == ']') {
-				
+
 			} else if(cmd == 'A') {
-				
+
 			} else if(cmd == 'F') {
-				
+
 			} else if(cmd == 'G') {
 				getd();
 			} else if(cmd == 'L') {
@@ -188,7 +188,7 @@ void NACT_Sys1::cmd_branch()
 			} else if(cmd == 'Q') {
 				getd();
 			} else if(cmd == 'R') {
-				
+
 			} else if(cmd == 'S') {
 				getd();
 			} else if(cmd == 'U') {
@@ -291,7 +291,7 @@ void NACT_Sys1::cmd_set_menu()
 {
 	if(ags->draw_menu) {
 		ags->menu_dest_x = 2;
-		ags->menu_dest_y += ags->menu_font_size + 2;
+		ags->menu_dest_y += ags->menu_font_maxsize + 2;
 		ags->draw_menu = false;
 
 		output_console("$");
@@ -373,7 +373,7 @@ void NACT_Sys1::cmd_open_verb()
 
 	// 表示する動詞のチェック
 	int chk[MAX_VERB], page = 0, cnt = 0;
-	
+
 	memset(chk, 0, sizeof(chk));
 	for(int i = 0; i < menu_index; i++) {
 		chk[menu_verb[i]] = 1;
@@ -392,7 +392,7 @@ top:
 	ags->menu_dest_y = 0;
 	ags->draw_menu = true;
 
-	if(cnt <= MENU_MAX) {
+	if(cnt <= ags->menu_max) {
 		// 1ページ内に全て表示できる
 		for(int i = 0; i < MAX_VERB; i++) {
 			if(chk[i]) {
@@ -400,7 +400,7 @@ top:
 				ags->menu_dest_y += 2;
 				ags->draw_text(caption_verb[i]);
 				id[index++] = i;
-				ags->menu_dest_y += ags->menu_font_size + 2;
+				ags->menu_dest_y += ags->menu_font_maxsize + 2;
 			}
 		}
 	} else {
@@ -411,10 +411,10 @@ top2:
 				ags->menu_dest_y += 2;
 				ags->draw_text(caption_verb[i]);
 				id[index++] = i;
-				ags->menu_dest_y += ags->menu_font_size + 2;
+				ags->menu_dest_y += ags->menu_font_maxsize + 2;
 			}
 			page = i + 1;
-			if(index == MENU_MAX - 1) {
+			if(index == ags->menu_max - 1) {
 				break;
 			}
 		}
@@ -428,7 +428,7 @@ top2:
 		ags->menu_dest_y += 2;
 		ags->draw_text(strings::next_page[lang]);
 		id[index++] = -1;
-		ags->menu_dest_y += ags->menu_font_size + 2;
+		ags->menu_dest_y += ags->menu_font_maxsize + 2;
 	}
 	ags->draw_menu = false;
 
@@ -453,7 +453,7 @@ void NACT_Sys1::cmd_open_obj(int verb)
 
 	// 表示する目的語のチェック
 	int chk[MAX_OBJ], addr[MAX_OBJ], page = 0, cnt = 0;
-	
+
 	memset(chk, 0, sizeof(chk));
 	for(int i = 0; i < menu_index; i++) {
 		if(menu_verb[i] == verb) {
@@ -483,7 +483,7 @@ top:
 	ags->menu_dest_y = 0;
 	ags->draw_menu = true;
 
-	if(cnt <= MENU_MAX - 1) {
+	if(cnt <= ags->menu_max - 1) {
 		// 1ページ内に全て表示できる
 		for(int i = 0; i < MAX_OBJ; i++) {
 			if(chk[i]) {
@@ -491,7 +491,7 @@ top:
 				ags->menu_dest_y += 2;
 				ags->draw_text(caption_obj[i]);
 				id[index++] = i;
-				ags->menu_dest_y += ags->menu_font_size + 2;
+				ags->menu_dest_y += ags->menu_font_maxsize + 2;
 			}
 		}
 		// 戻るを追加
@@ -499,7 +499,7 @@ top:
 		ags->menu_dest_y += 2;
 		ags->draw_text(strings::back[lang]);
 		id[index++] = 0;
-		ags->menu_dest_y += ags->menu_font_size + 2;
+		ags->menu_dest_y += ags->menu_font_maxsize + 2;
 	} else {
 top2:
 		for(int i = page; i < MAX_OBJ; i++) {
@@ -508,10 +508,10 @@ top2:
 				ags->menu_dest_y += 2;
 				ags->draw_text(caption_obj[i]);
 				id[index++] = i;
-				ags->menu_dest_y += ags->menu_font_size + 2;
+				ags->menu_dest_y += ags->menu_font_maxsize + 2;
 			}
 			page = i + 1;
-			if(index == MENU_MAX - 2) {
+			if(index == ags->menu_max - 2) {
 				break;
 			}
 		}
@@ -525,14 +525,14 @@ top2:
 		ags->menu_dest_y += 2;
 		ags->draw_text(strings::back[lang]);
 		id[index++] = 0;
-		ags->menu_dest_y += ags->menu_font_size + 2;
+		ags->menu_dest_y += ags->menu_font_maxsize + 2;
 
 		// 次のページを追加
 		ags->menu_dest_x = 2;
 		ags->menu_dest_y += 2;
 		ags->draw_text(strings::next_page[lang]);
 		id[index++] = -1;
-		ags->menu_dest_y += ags->menu_font_size + 2;
+		ags->menu_dest_y += ags->menu_font_maxsize + 2;
 	}
 	ags->draw_menu = false;
 
@@ -751,6 +751,21 @@ void NACT_Sys1::cmd_l()
 					var_stack[i][j] = fio->Fgetw();
 				}
 			}
+
+			// New variables exclusive to SysEng.
+            ags->draw_hankaku = fio->Fgetw();
+			ags->draw_menu_monospace = fio->Fgetw();
+			ags->draw_text_monospace = fio->Fgetw();
+
+			ags->cur_menu_monospace_font = fio->Fgetw();
+			ags->cur_text_monospace_font = fio->Fgetw();
+			ags->cur_menu_vwidth_font = fio->Fgetw();
+			ags->cur_text_vwidth_font = fio->Fgetw();
+
+			// Process SysEng variables.
+			ags->load_custom_font(ags->menu_font_size);
+            ags->set_menu_font_maxsize();
+
 			fio->Fclose();
 
 			load_scenario(next_page);
@@ -823,7 +838,7 @@ void NACT_Sys1::cmd_q()
 
 		FILEIO* fio = new FILEIO();
 		if(fio->Fopen(file_name, FILEIO_WRITE_BINARY | FILEIO_SAVEDATA)) {
-			uint8 buffer[9510];
+			uint8 buffer[9524];
 			int p = 0;
 
 			FWRITE(header, 112);
@@ -881,7 +896,16 @@ void NACT_Sys1::cmd_q()
 				}
 			}
 
-			fio->Fwrite(buffer, 9510, 1);
+			// New variables exclusive to SysEng.
+			FPUTW(ags->draw_hankaku);
+			FPUTW(ags->draw_menu_monospace);
+			FPUTW(ags->draw_text_monospace);
+			FPUTW(ags->cur_menu_monospace_font);
+			FPUTW(ags->cur_text_monospace_font);
+			FPUTW(ags->cur_menu_vwidth_font);
+			FPUTW(ags->cur_text_vwidth_font);
+
+			fio->Fwrite(buffer, 9524, 1);
 			fio->Fclose();
 		}
 		delete fio;
@@ -1008,6 +1032,71 @@ void NACT_Sys1::cmd_y()
 			case 3:
 				WAIT(param * 1000)
 				break;
+            case 25:
+                if(param <= 5) {
+                    ags->menu_font_size = (param == 1) ? 16 : (param == 2) ? 24 : (param == 3) ? 32 : (param == 4) ? 48 : (param == 5) ? 64 : 16;
+                }
+                else {
+                    // If a custom font was requested, load it if necessary. If it doesn't load, default
+                    // to size 16.
+                    if(ags->load_custom_font(param)) ags->menu_font_size = param;
+                    else ags->menu_font_size = 16;
+                }
+                ags->set_menu_font_maxsize();
+
+                break;
+            case 26:
+                if(param <= 5) {
+                    ags->text_font_size = (param == 1) ? 16 : (param == 2) ? 24 : (param == 3) ? 32 : (param == 4) ? 48 : (param == 5) ? 64 : 16;
+                }
+                else {
+                    // If a custom font was requested, load it if necessary. If it doesn't load, default
+                    // to size 16.
+                    if(ags->load_custom_font(param)) ags->text_font_size = param;
+                    else ags->text_font_size = 16;
+                }
+                break;
+			// Adding this because it's an ASCII text necessity.
+			case 240:
+				ags->draw_hankaku = (param == 1) ? true : false;
+				break;
+            // Monospace or variable-width font support.
+            case 242:
+                ags->set_menu_monospace(param);
+                ags->set_menu_font_maxsize();
+                break;
+            case 243:
+                ags->set_text_monospace(param);
+                break;
+            // Alternate font support.
+            case 244:
+                if(param < 0 || param > 3) break;
+
+                ags->cur_menu_monospace_font = param;
+                ags->set_menu_font_maxsize();
+                break;
+            case 245:
+                if(param < 0 || param > 3) break;
+
+                ags->cur_text_monospace_font = param;
+                break;
+            case 246:
+                if(param < 0 || param > 3) break;
+
+                // Variable-width fonts are optional, check if they exist before switching.
+                if(!ags->has_vwidth_font(param)) break;
+
+                ags->cur_menu_vwidth_font = param;
+                ags->set_menu_font_maxsize();
+                break;
+            case 247:
+                if(param < 0 || param > 3) break;
+
+                // Variable-width fonts are optional, check if they exist before switching.
+                if(!ags->has_vwidth_font(param)) break;
+
+                ags->cur_text_vwidth_font = param;
+                break;
 			case 255:
 				post_quit = true;
 				fatal_error = true;
@@ -1069,6 +1158,35 @@ void NACT_Sys1::cmd_y()
 					}
 				}
 				break;
+
+            case 24:
+                ags->menu_max_height = param;
+                ags->set_menu_font_maxsize();
+                break;
+            case 25:
+                if(param <= 5) {
+                    ags->menu_font_size = (param == 1) ? 16 : (param == 2) ? 24 : (param == 3) ? 32 : (param == 4) ? 48 : (param == 5) ? 64 : 16;
+                }
+                else {
+                    // If a custom font was requested, load it if necessary. If it doesn't load, default
+                    // to size 16.
+                    if(ags->load_custom_font(param)) ags->menu_font_size = param;
+                    else ags->menu_font_size = 16;
+                }
+                ags->set_menu_font_maxsize();
+
+                break;
+            case 26:
+                if(param <= 5) {
+                    ags->text_font_size = (param == 1) ? 16 : (param == 2) ? 24 : (param == 3) ? 32 : (param == 4) ? 48 : (param == 5) ? 64 : 16;
+                }
+                else {
+                    // If a custom font was requested, load it if necessary. If it doesn't load, default
+                    // to size 16.
+                    if(ags->load_custom_font(param)) ags->text_font_size = param;
+                    else ags->text_font_size = 16;
+                }
+                break;
 			case 130:
 				if(crc32_a == CRC32_TENGU) {
 					WAIT(2000)
@@ -1097,9 +1215,47 @@ void NACT_Sys1::cmd_y()
 					ags->draw_box(param);
 				}
 				break;
+			// Adding this because it's an ASCII text necessity.
 			case 240:
 				ags->draw_hankaku = (param == 1) ? true : false;
 				break;
+            // Monospace or variable-width font support.
+            case 242:
+                ags->set_menu_monospace(param);
+                ags->set_menu_font_maxsize();
+                break;
+            case 243:
+                ags->set_text_monospace(param);
+                break;
+            // Alternate font support.
+            case 244:
+                if(param < 0 || param > 3) break;
+
+                ags->cur_menu_monospace_font = param;
+                ags->set_menu_font_maxsize();
+                break;
+            case 245:
+                if(param < 0 || param > 3) break;
+
+                ags->cur_text_monospace_font = param;
+                break;
+            case 246:
+                if(param < 0 || param > 3) break;
+
+                // Variable-width fonts are optional, check if they exist before switching.
+                if(!ags->has_vwidth_font(param)) break;
+
+                ags->cur_menu_vwidth_font = param;
+                ags->set_menu_font_maxsize();
+                break;
+            case 247:
+                if(param < 0 || param > 3) break;
+
+                // Variable-width fonts are optional, check if they exist before switching.
+                if(!ags->has_vwidth_font(param)) break;
+
+                ags->cur_text_vwidth_font = param;
+                break;
 			case 253:
 				post_quit = false;
 				fatal_error = true;

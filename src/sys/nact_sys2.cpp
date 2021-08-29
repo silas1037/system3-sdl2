@@ -6,13 +6,14 @@
 	[ NACT - command ]
 */
 
+#include <string>
 #include "nact.h"
 #include "ags.h"
 #include "mako.h"
 #include "msgskip.h"
 #include "crc32.h"
 #include "../fileio.h"
-#include "texthook.h"
+#include "../texthook.h"
 
 #define WAIT(tm) \
 { \
@@ -127,9 +128,9 @@ void NACT_Sys2::cmd_branch()
 				getd();
 				getw();
 			} else if(cmd == ']') {
-				
+
 			} else if(cmd == 'A') {
-				
+
 			} else if(cmd == 'B') {
 				cali();
 				cali();
@@ -152,7 +153,7 @@ void NACT_Sys2::cmd_branch()
 				cali();
 				cali();
 			} else if(cmd == 'F') {
-				
+
 			} else if(cmd == 'G') {
 				cali();
 			} else if(cmd == 'H') {
@@ -167,7 +168,7 @@ void NACT_Sys2::cmd_branch()
 				cali();
 				cali();
 			} else if(cmd == 'K') {
-				
+
 			} else if(cmd == 'L') {
 				getd();
 			} else if(cmd == 'M') {
@@ -196,7 +197,7 @@ void NACT_Sys2::cmd_branch()
 			} else if(cmd == 'Q') {
 				getd();
 			} else if(cmd == 'R') {
-				
+
 			} else if(cmd == 'S') {
 				getd();
 			} else if(cmd == 'T') {
@@ -348,7 +349,7 @@ void NACT_Sys2::cmd_set_menu()
 {
 	if(ags->draw_menu) {
 		ags->menu_dest_x = 2;
-		ags->menu_dest_y += ags->menu_font_size + 2;
+		ags->menu_dest_y += ags->menu_font_maxsize + 2;
 		ags->draw_menu = false;
 
 		output_console("$");
@@ -424,7 +425,7 @@ void NACT_Sys2::cmd_open_verb()
 
 	// 表示する動詞のチェック
 	int chk[MAX_VERB], page = 0;
-	
+
 	memset(chk, 0, sizeof(chk));
 	for(int i = 0; i < menu_index; i++) {
 		chk[menu_verb[i]] = 1;
@@ -443,7 +444,7 @@ void NACT_Sys2::cmd_open_verb()
 			ags->menu_dest_y += 2;
 			ags->draw_text(caption_verb[i]);
 			id[index++] = i;
-			ags->menu_dest_y += ags->menu_font_size + 2;
+			ags->menu_dest_y += ags->menu_font_maxsize + 2;
 		}
 	}
 	ags->draw_menu = false;
@@ -467,7 +468,7 @@ void NACT_Sys2::cmd_open_obj(int verb)
 
 	// 表示する目的語のチェック
 	int chk[MAX_OBJ], addr[MAX_OBJ], page = 0;
-	
+
 	memset(chk, 0, sizeof(chk));
 	for(int i = 0; i < menu_index; i++) {
 		if(menu_verb[i] == verb) {
@@ -497,7 +498,7 @@ void NACT_Sys2::cmd_open_obj(int verb)
 			ags->menu_dest_y += 2;
 			ags->draw_text(caption_obj[i]);
 			id[index++] = i;
-			ags->menu_dest_y += ags->menu_font_size + 2;
+			ags->menu_dest_y += ags->menu_font_maxsize + 2;
 		}
 	}
 	// 戻るを追加
@@ -505,7 +506,7 @@ void NACT_Sys2::cmd_open_obj(int verb)
 	ags->menu_dest_y += 2;
 	ags->draw_text(strings::back[lang]);
 	id[index++] = 0;
-	ags->menu_dest_y += ags->menu_font_size + 2;
+	ags->menu_dest_y += ags->menu_font_maxsize + 2;
 	ags->draw_menu = false;
 
 	int selection = menu_select(index);
@@ -542,7 +543,7 @@ void NACT_Sys2::cmd_a()
 		}
 		sys_sleep(16);
 	}
-	sys_sleep(30);
+	sys_sleep(30);//100);
 	while (!msgskip->skipping()) {
 		if(terminate) {
 			return;
@@ -748,7 +749,31 @@ void NACT_Sys2::cmd_j()
 
 void NACT_Sys2::cmd_k()
 {
-	// 未使用
+    if(!msgskip->skipping()) {
+		if(show_push) {
+			ags->draw_push(text_window);
+		}
+        for(;;) {
+			if(terminate) {
+				return;
+			}
+			if(get_key()) {
+				break;
+			}
+			sys_sleep(16);
+		}
+		sys_sleep(30);
+		for(;;) {
+			if(terminate) {
+				return;
+			}
+			if(!(get_key() & 0x18)) {
+				break;
+			}
+			sys_sleep(16);
+		}
+	}
+
 	cmd_r();
 }
 
@@ -841,6 +866,21 @@ void NACT_Sys2::cmd_l()
 					var_stack[i][j] = fio->Fgetw();
 				}
 			}
+
+			// New variables exclusive to SysEng.
+            ags->draw_hankaku = fio->Fgetw();
+			ags->draw_menu_monospace = fio->Fgetw();
+			ags->draw_text_monospace = fio->Fgetw();
+
+			ags->cur_menu_monospace_font = fio->Fgetw();
+			ags->cur_text_monospace_font = fio->Fgetw();
+			ags->cur_menu_vwidth_font = fio->Fgetw();
+			ags->cur_text_vwidth_font = fio->Fgetw();
+
+			// Process SysEng variables.
+			ags->load_custom_font(ags->menu_font_size);
+            ags->set_menu_font_maxsize();
+
 			fio->Fclose();
 
 			load_scenario(next_page);
@@ -954,7 +994,7 @@ void NACT_Sys2::cmd_q()
 
 		FILEIO* fio = new FILEIO();
 		if(fio->Fopen(file_name, FILEIO_WRITE_BINARY | FILEIO_SAVEDATA)) {
-			uint8 buffer[9510];
+			uint8 buffer[9524];
 			int p = 0;
 
 			FWRITE(header, 112);
@@ -1012,7 +1052,16 @@ void NACT_Sys2::cmd_q()
 				}
 			}
 
-			fio->Fwrite(buffer, 9510, 1);
+			// New variables exclusive to SysEng.
+			FPUTW(ags->draw_hankaku);
+			FPUTW(ags->draw_menu_monospace);
+			FPUTW(ags->draw_text_monospace);
+			FPUTW(ags->cur_menu_monospace_font);
+			FPUTW(ags->cur_text_monospace_font);
+			FPUTW(ags->cur_menu_vwidth_font);
+			FPUTW(ags->cur_text_vwidth_font);
+
+			fio->Fwrite(buffer, 9524, 1);
 			fio->Fclose();
 		}
 		delete fio;
@@ -1057,7 +1106,7 @@ void NACT_Sys2::cmd_u()
 {
 	int page, transparent;
 
-	if(crc32_a == CRC32_YAKATA2) {
+	if(true) { //crc32_a == CRC32_YAKATA2) {
 		page = cali();
 		transparent = cali();
 	} else {
@@ -1073,6 +1122,46 @@ void NACT_Sys2::cmd_u()
 void NACT_Sys2::cmd_v()
 {
 #if 1
+    int cmd = getd();
+	int index = cali();
+	int varIndex;
+	std::string debugOut = "\nV " + std::to_string(cmd) + ", " + std::to_string(index);
+
+	// Read data from stacks.
+	if(cmd == 0) {
+		for(int i = 0; i < 28; i++) {
+			varIndex = get_var_index();
+
+			if(varIndex != -1) {
+				var[varIndex] = var_stack[index - 1][i];
+				debugOut += ", " + std::to_string(varIndex);
+			}
+		}
+
+		for(int i = 0; i < 10; i++) {
+			memcpy(tvar[i], tvar_stack[index - 1][i], 22);
+		}
+	}
+	// Write data to stacks.
+	else {
+		for(int i = 0; i < 28; i++) {
+			varIndex = get_var_index();
+
+			if(varIndex != -1) {
+				var_stack[index - 1][i] = var[varIndex];
+				debugOut += ", " + std::to_string(varIndex);
+			}
+		}
+
+		for(int i = 0; i < 10; i++) {
+			memcpy(tvar_stack[index - 1][i], tvar[i], 22);
+		}
+	}
+
+	debugOut += ":";
+
+	output_console(debugOut.c_str());
+#elif FALSE
 	int p01 = cali();
 	int p02 = cali();
 	int p03 = cali();
@@ -1183,6 +1272,12 @@ void NACT_Sys2::cmd_y()
 		case 4:
 			RND = (param == 0 || param == 1) ? 0 : random(param);
 			break;
+        case 5:
+			// Image preloading. No longer necessary.
+			break;
+		case 6:
+			// Seemingly inconsequential, ignore.
+			break;
 		case 7:
 			if(!(crc32_a == CRC32_SDPS && crc32_b == CRC32_SDPS_MARIA)) {
 				ags->draw_box(param);
@@ -1195,11 +1290,19 @@ void NACT_Sys2::cmd_y()
 			RND = 1;
 			break;
 		case 25:
-			ags->menu_font_size = (param == 1) ? 16 : (param == 2) ? 24 : (param == 3) ? 32 : (param == 4) ? 48 : (param == 5) ? 64 : 16;
+			// Used to arrange the message box. Deliberately disabled, use B commands instead.
 			break;
-		case 26:
-			ags->text_font_size = (param == 1) ? 16 : (param == 2) ? 24 : (param == 3) ? 32 : (param == 4) ? 48 : (param == 5) ? 64 : 16;
-			break;
+        case 26:
+            if(param <= 5) {
+                ags->text_font_size = (param == 1) ? 16 : (param == 2) ? 24 : (param == 3) ? 32 : (param == 4) ? 48 : (param == 5) ? 64 : 16;
+            }
+            else {
+                // If a custom font was requested, load it if necessary. If it doesn't load, default
+                // to size 16.
+                if(ags->load_custom_font(param)) ags->text_font_size = param;
+                else ags->text_font_size = 16;
+            }
+            break;
 		case 27:
 			{
 				int tmp = tvar_index;
@@ -1209,6 +1312,16 @@ void NACT_Sys2::cmd_y()
 				tvar_index = tmp;
 			}
 			break;
+
+		// TEST
+		case 30:
+			ags->src_screen = param ? 1 : 0;
+			break;
+		case 31:
+			ags->dest_screen = param ? 1 : 0;
+			break;
+		// END TEST
+
 		case 40:
 		case 42:
 			if(ags->now_fade()) {
@@ -1264,6 +1377,46 @@ void NACT_Sys2::cmd_y()
 				ags->draw_text(string);
 			}
 			break;
+		case 240:
+			ags->draw_hankaku = (param == 1) ? true : false;
+			break;
+        // Monospace or variable-width font support.
+        case 242:
+            ags->set_menu_monospace(param);
+            ags->set_menu_font_maxsize();
+            break;
+        case 243:
+            ags->set_text_monospace(param);
+            break;
+        // Alternate font support.
+        case 244:
+            if(param < 0 || param > 3) break;
+
+            ags->cur_menu_monospace_font = param;
+            ags->set_menu_font_maxsize();
+            break;
+        case 245:
+            if(param < 0 || param > 3) break;
+
+            ags->cur_text_monospace_font = param;
+            break;
+        case 246:
+            if(param < 0 || param > 3) break;
+
+            // Variable-width fonts are optional, check if they exist before switching.
+            if(!ags->has_vwidth_font(param)) break;
+
+            ags->cur_menu_vwidth_font = param;
+            ags->set_menu_font_maxsize();
+            break;
+        case 247:
+            if(param < 0 || param > 3) break;
+
+            // Variable-width fonts are optional, check if they exist before switching.
+            if(!ags->has_vwidth_font(param)) break;
+
+            ags->cur_text_vwidth_font = param;
+            break;
 		case 252:
 			RND = 8;
 			break;
