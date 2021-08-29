@@ -12,7 +12,7 @@
 #include "msgskip.h"
 #include "crc32.h"
 #include "../fileio.h"
-#include "texthook.h"
+#include "../texthook.h"
 
 NACT_Sys3::NACT_Sys3(uint32 crc32_a, uint32 crc32_b, const Config& config)
 	: NACT(3, crc32_a, crc32_b, config)
@@ -109,7 +109,7 @@ void NACT_Sys3::cmd_set_menu()
 {
 	if(ags->draw_menu) {
 		ags->menu_dest_x = 2;
-		ags->menu_dest_y += ags->menu_font_size + 2;
+		ags->menu_dest_y += ags->menu_font_maxsize + 2;
 		ags->draw_menu = false;
 
 		output_console("$");
@@ -185,7 +185,7 @@ void NACT_Sys3::cmd_open_verb()
 
 	// 表示する動詞のチェック
 	int chk[MAX_VERB], page = 0;
-	
+
 	memset(chk, 0, sizeof(chk));
 	for(int i = 0; i < menu_index; i++) {
 		chk[menu_verb[i]] = 1;
@@ -204,7 +204,7 @@ void NACT_Sys3::cmd_open_verb()
 			ags->menu_dest_y += 2;
 			ags->draw_text(caption_verb[i]);
 			id[index++] = i;
-			ags->menu_dest_y += ags->menu_font_size + 2;
+			ags->menu_dest_y += ags->menu_font_maxsize + 2;
 		}
 	}
 	ags->draw_menu = false;
@@ -228,7 +228,7 @@ void NACT_Sys3::cmd_open_obj(int verb)
 
 	// 表示する目的語のチェック
 	int chk[MAX_OBJ], addr[MAX_OBJ], page = 0;
-	
+
 	memset(chk, 0, sizeof(chk));
 	for(int i = 0; i < menu_index; i++) {
 		if(menu_verb[i] == verb) {
@@ -258,7 +258,7 @@ void NACT_Sys3::cmd_open_obj(int verb)
 			ags->menu_dest_y += 2;
 			ags->draw_text(caption_obj[i]);
 			id[index++] = i;
-			ags->menu_dest_y += ags->menu_font_size + 2;
+			ags->menu_dest_y += ags->menu_font_maxsize + 2;
 		}
 	}
 	// 戻るを追加
@@ -266,7 +266,7 @@ void NACT_Sys3::cmd_open_obj(int verb)
 	ags->menu_dest_y += 2;
 	ags->draw_text(strings::back[lang]);
 	id[index++] = 0;
-	ags->menu_dest_y += ags->menu_font_size + 2;
+	ags->menu_dest_y += ags->menu_font_maxsize + 2;
 	ags->draw_menu = false;
 
 	int selection = menu_select(index);
@@ -335,9 +335,15 @@ void NACT_Sys3::cmd_b()
 		if(crc32_a == CRC32_AYUMI_CD || crc32_a == CRC32_AYUMI_JISSHA_256 || crc32_a == CRC32_AYUMI_JISSHA_FULL) {
 			p5 = 1;
 		}
-		ags->menu_w[index - 1].sx = column ? p1 * 8 : p1 & 0xfff8;
+		if(!x_coord_override) {
+            ags->menu_w[index - 1].sx = column ? p1 * 8 : p1 & 0xfff8;
+            ags->menu_w[index - 1].ex = column ? p3 * 8 - 1 : (p3 & 0xfff8) - 1;
+		}
+		else {
+            ags->menu_w[index - 1].sx = column ? p1 * 8 : p1;
+            ags->menu_w[index - 1].ex = column ? p3 * 8 - 1 : p3 - 1;
+		}
 		ags->menu_w[index - 1].sy = p2;
-		ags->menu_w[index - 1].ex = column ? p3 * 8 - 1 : (p3 & 0xfff8) - 1;
 		ags->menu_w[index - 1].ey = p4;
 		ags->menu_w[index - 1].push = p5 ? true : false;
 
@@ -350,9 +356,15 @@ void NACT_Sys3::cmd_b()
 		ags->menu_w[index - 1].frame = p1 ? true : false;
 		menu_window = index;
 	} else if(cmd == 3) {
-		ags->text_w[index - 1].sx = column ? p1 * 8 : p1 & 0xfff8;
+	    if(!x_coord_override) {
+            ags->text_w[index - 1].sx = column ? p1 * 8 : p1 & 0xfff8;
+            ags->text_w[index - 1].ex = column ? p3 * 8 - 1 : (p3 & 0xfff8) - 1;
+	    }
+	    else {
+            ags->text_w[index - 1].sx = column ? p1 * 8 : p1;
+            ags->text_w[index - 1].ex = column ? p3 * 8 - 1 : p3;
+	    }
 		ags->text_w[index - 1].sy = p2;
-		ags->text_w[index - 1].ex = column ? p3 * 8 - 1 : (p3 & 0xfff8) - 1;
 		ags->text_w[index - 1].ey = p4;
 		ags->text_w[index - 1].push = p5 ? true : false;
 
@@ -485,9 +497,16 @@ void NACT_Sys3::cmd_i()
 	output_console("\nI %d,%d,%d,%d,%d,%d:", sx, sy, ex, ey, dx, dy);
 
 	// X方向はカラム単位で切り捨て
-	sx = column ? sx * 8 : sx & 0xfff8;
-	ex = column ? ex * 8 - 1 : (crc32_a == CRC32_NINGYO) ? (ex & 0xfff8) + 7 : (ex & 0xfff8) - 1;
-	dx = column ? dx * 8 : dx & 0xfff8;
+	if(!x_coord_override) {
+		sx = column ? sx * 8 : sx & 0xfff8;
+		ex = column ? ex * 8 - 1 : (crc32_a == CRC32_NINGYO) ? (ex & 0xfff8) + 7 : (ex & 0xfff8) - 1;
+		dx = column ? dx * 8 : dx & 0xfff8;
+	}
+	else {
+        sx = column ? sx * 8 : sx;
+        ex = column ? ex * 8 - 1 : (crc32_a == CRC32_NINGYO) ? ex + 7 : ex - 1;
+        dx = column ? dx * 8 : dx;
+	}
 	ags->copy(sx, sy, ex, ey, dx, dy);
 }
 
@@ -499,7 +518,12 @@ void NACT_Sys3::cmd_j()
 	output_console("\nJ %d,%d:", x, y);
 
 	// x方向はカラム単位で切り捨て
-	ags->cg_dest_x = column ? x * 8 : x & 0xfff8;
+	if(!x_coord_override) {
+        ags->cg_dest_x = column ? x * 8 : x & 0xfff8;
+	}
+	else {
+        ags->cg_dest_x = column ? x * 8 : x;
+	}
 	ags->cg_dest_y = y;
 	ags->set_cg_dest = true;
 }
@@ -681,6 +705,21 @@ void NACT_Sys3::cmd_l()
 					var_stack[i][j] = fio->Fgetw();
 				}
 			}
+
+			// New variables exclusive to SysEng.
+            ags->draw_hankaku = fio->Fgetw();
+			ags->draw_menu_monospace = fio->Fgetw();
+			ags->draw_text_monospace = fio->Fgetw();
+
+			ags->cur_menu_monospace_font = fio->Fgetw();
+			ags->cur_text_monospace_font = fio->Fgetw();
+			ags->cur_menu_vwidth_font = fio->Fgetw();
+			ags->cur_text_vwidth_font = fio->Fgetw();
+
+			// Process SysEng variables.
+			ags->load_custom_font(ags->menu_font_size);
+            ags->set_menu_font_maxsize();
+
 			fio->Fclose();
 
 			load_scenario(next_page);
@@ -805,7 +844,7 @@ void NACT_Sys3::cmd_o()
 
 void NACT_Sys3::cmd_p()
 {
-	int index =cali();
+	int index = cali();
 	int r = cali();
 	int g = cali();
 	int b = cali();
@@ -876,7 +915,7 @@ void NACT_Sys3::cmd_q()
 
 		FILEIO* fio = new FILEIO();
 		if(fio->Fopen(file_name, FILEIO_WRITE_BINARY | FILEIO_SAVEDATA)) {
-			uint8 buffer[9510];
+			uint8 buffer[9524];
 			int p = 0;
 
 			FWRITE(header, 112);
@@ -934,7 +973,16 @@ void NACT_Sys3::cmd_q()
 				}
 			}
 
-			fio->Fwrite(buffer, 9510, 1);
+			// New variables exclusive to SysEng.
+			FPUTW(ags->draw_hankaku);
+			FPUTW(ags->draw_menu_monospace);
+			FPUTW(ags->draw_text_monospace);
+			FPUTW(ags->cur_menu_monospace_font);
+			FPUTW(ags->cur_text_monospace_font);
+			FPUTW(ags->cur_menu_vwidth_font);
+			FPUTW(ags->cur_text_vwidth_font);
+
+			fio->Fwrite(buffer, 9524, 1);
 			fio->Fclose();
 		}
 		delete fio;
@@ -974,7 +1022,12 @@ void NACT_Sys3::cmd_t()
 	output_console("\nT %d,%d:", x, y);
 
 	// x方向はカラム単位で切り捨て
-	ags->text_dest_x = column ? x * 8 : x & 0xfff8;
+    if(!x_coord_override) {
+        ags->text_dest_x = column ? x * 8 : x & 0xfff8;
+    }
+    else {
+        ags->text_dest_x = column ? x * 8 : x;
+    }
 	ags->text_dest_y = y;
 }
 
@@ -1143,12 +1196,38 @@ void NACT_Sys3::cmd_y()
 			break;
 		case 24:
 			break;
-		case 25:
-			ags->menu_font_size = (param == 1) ? 16 : (param == 2) ? 24 : (param == 3) ? 32 : (param == 4) ? 48 : (param == 5) ? 64 : 16;
-			break;
-		case 26:
-			ags->text_font_size = (param == 1) ? 16 : (param == 2) ? 24 : (param == 3) ? 32 : (param == 4) ? 48 : (param == 5) ? 64 : 16;
-			break;
+        case 25:
+            if(param <= 5) {
+                ags->menu_font_size = (param == 1) ? 16 : (param == 2) ? 24 : (param == 3) ? 32 : (param == 4) ? 48 : (param == 5) ? 64 : 16;
+            }
+            else {
+                // If a custom font was requested, load it if necessary. If it doesn't load, default
+                // to size 16.
+                if(ags->load_custom_font(param)) {
+                    ags->menu_font_size = param;
+                }
+                else {
+                    ags->menu_font_size = 16;
+                }
+            }
+            ags->set_menu_font_maxsize();
+
+            break;
+        case 26:
+            if(param <= 5) {
+                ags->text_font_size = (param == 1) ? 16 : (param == 2) ? 24 : (param == 3) ? 32 : (param == 4) ? 48 : (param == 5) ? 64 : 16;
+            }
+            else {
+                // If a custom font was requested, load it if necessary. If it doesn't load, default
+                // to size 16.
+                if(ags->load_custom_font(param)) {
+                    ags->text_font_size = param;
+                }
+                else {
+                    ags->text_font_size = 16;
+                }
+            }
+            break;
 		case 27:
 			tvar_maxlen = param;
 			text_dialog();
@@ -1386,9 +1465,47 @@ void NACT_Sys3::cmd_y()
 			break;
 		case 241:
 			break;
+        // Monospace or variable-width font support.
+        case 242:
+            ags->set_menu_monospace(param);
+            ags->set_menu_font_maxsize();
+            break;
+        case 243:
+            ags->set_text_monospace(param);
+            break;
+        // Alternate font support.
+        case 244:
+            if(param < 0 || param > 3) break;
+
+            ags->cur_menu_monospace_font = param;
+            ags->set_menu_font_maxsize();
+            break;
+        case 245:
+            if(param < 0 || param > 3) break;
+
+            ags->cur_text_monospace_font = param;
+            break;
+        case 246:
+            if(param < 0 || param > 3) break;
+
+            // Variable-width fonts are optional, check if they exist before switching.
+            if(!ags->has_vwidth_font(param)) break;
+
+            ags->cur_menu_vwidth_font = param;
+            ags->set_menu_font_maxsize();
+            break;
+        case 247:
+            if(param < 0 || param > 3) break;
+
+            // Variable-width fonts are optional, check if they exist before switching.
+            if(!ags->has_vwidth_font(param)) break;
+
+            ags->cur_text_vwidth_font = param;
+            break;
 		case 250:
 #if 0
-			if(FILEIO::GetRootPath()[1] == ':') {
+			if(FILEIO::GetRootPath()[1] == ':') {
+
 				_TCHAR root_path[4];
 				root_path[0] = FILEIO::GetRootPath()[0];
 				root_path[1] = ':';

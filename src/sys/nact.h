@@ -1,3 +1,6 @@
+#ifndef HEADER_51264299703E45A
+#define HEADER_51264299703E45A
+
 /*
 	ALICE SOFT SYSTEM 3 for Win32
 
@@ -177,6 +180,8 @@ protected:
 	// DPS
 	bool text_refresh;
 
+	bool x_coord_override;
+
 	bool column;		// 座標モード
 	bool wait_keydown;	// ウェイト時のキー受付
 	int text_wait_time;	// テキスト表示のウェイト
@@ -188,9 +193,9 @@ protected:
 	bool clear_text;	// メニュー後のメッセージウィンドウ消去
 
 	int menu_index;			// メニュー登録のインデックス
-	int menu_addr[64];		// ジャンプ先のアドレス
-	int menu_verb[64];		// 登録された動詞
-	int menu_obj[64];		// 登録された目的語
+	int menu_addr[128];		// ジャンプ先のアドレス
+	int menu_verb[128];		// 登録された動詞
+	int menu_obj[128];		// 登録された目的語
 
 	char caption_verb[MAX_VERB][MAX_CAPTION];
 	char caption_obj[MAX_OBJ][MAX_CAPTION];
@@ -241,6 +246,8 @@ protected:
 	// Platform-specific setup / cleanup code
 	void platform_initialize();
 	void platform_finalize();
+
+	int get_var_index();
 
 public:
 	bool mainloop();
@@ -420,3 +427,5 @@ protected:
 };
 
 #endif // _NACT_H_
+#endif // header guard 
+

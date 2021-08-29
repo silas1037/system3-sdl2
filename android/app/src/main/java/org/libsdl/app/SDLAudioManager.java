@@ -227,7 +227,7 @@ public class SDLAudioManager
             results[1] = mAudioTrack.getAudioFormat();
             results[2] = mAudioTrack.getChannelCount();
         }
-        results[3] = desiredFrames;
+		results[3] = desiredFrames;
 
         Log.v(TAG, "Opening " + (isCapture ? "capture" : "playback") + ", got " + results[3] + " frames of " + results[2] + " channel " + getAudioFormatString(results[1]) + " audio at " + results[0] + " Hz");
 

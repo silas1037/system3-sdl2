@@ -6,16 +6,19 @@
 
 #include <string.h>
 #include "ags.h"
-#include "utfsjis.h"
-#include "texthook.h"
+#include "../utfsjis.h"
+#include "../texthook.h"
 
 static bool antialias = true;
+//static bool variableWidth = false;
 
 void AGS::draw_text(const char* string, bool text_wait)
 {
 	int p = 0;
 	int screen, dest_x, dest_y, font_size;
 	uint8 font_color;
+	bool draw_monospace;
+	int cur_font;
 
 	uint8 antialias_cache[256*7];
 	if (antialias)
@@ -27,6 +30,9 @@ void AGS::draw_text(const char* string, bool text_wait)
 		dest_y = menu_dest_y;
 		font_size = menu_font_size;
 		font_color = menu_font_color;
+		draw_monospace = draw_menu_monospace;
+		if(draw_text_monospace) cur_font = cur_menu_monospace_font;
+		else cur_font = cur_menu_vwidth_font;
 	} else {
 		screen = dest_screen;
 		dest_x = text_dest_x;
@@ -35,15 +41,31 @@ void AGS::draw_text(const char* string, bool text_wait)
 		font_color = text_font_color;
 		if (*string && text_font_maxsize < text_font_size)
 			text_font_maxsize = text_font_size;
+		draw_monospace = draw_text_monospace;
+		if(draw_text_monospace) cur_font = cur_text_monospace_font;
+		else cur_font = cur_text_vwidth_font;
 	}
 
-	TTF_Font* font = NULL;
-	switch (font_size) {
-	case 16: font = hFont16; break;
-	case 24: font = hFont24; break;
-	case 32: font = hFont32; break;
-	case 48: font = hFont48; break;
-	case 64: font = hFont64; break;
+    TTF_Font* font = NULL;
+	if(draw_monospace) {
+        switch (font_size) {
+            case 16: font = hFont16[cur_font]; break;
+            case 24: font = hFont24[cur_font]; break;
+            case 32: font = hFont32[cur_font]; break;
+            case 48: font = hFont48[cur_font]; break;
+            case 64: font = hFont64[cur_font]; break;
+            default: font = hFontCustom[cur_font][font_size];
+        }
+	}
+	else {
+        switch (font_size) {
+            case 16: font = hVWidthFont16[cur_font]; break;
+            case 24: font = hVWidthFont24[cur_font]; break;
+            case 32: font = hVWidthFont32[cur_font]; break;
+            case 48: font = hVWidthFont48[cur_font]; break;
+            case 64: font = hVWidthFont64[cur_font]; break;
+            default: font = hVWidthFontCustom[cur_font][font_size];
+        }
 	}
 	int ascent = TTF_FontAscent(font);
 	int descent = TTF_FontDescent(font);
@@ -87,7 +109,7 @@ void AGS::draw_text(const char* string, bool text_wait)
 		}
 
 		if (!draw_menu && text_wait && c != ' ') {
-			// 画面更新
+            // 画面更新
 			if(screen == 0)
 				draw_screen(text_dest_x, dest_y, dest_x - text_dest_x, ascent - descent);
 			text_dest_x = dest_x;

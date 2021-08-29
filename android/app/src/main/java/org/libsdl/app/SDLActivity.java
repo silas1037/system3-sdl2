@@ -948,16 +948,13 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
             if (mSingleton == null) {
                 return true;
             }
-
             if (mSingleton.isInMultiWindowMode()) {
                 return false;
             }
-
             if (mSingleton.isInPictureInPictureMode()) {
                 return false;
             }
         }
-
         return true;
 */
         return false;
@@ -1668,7 +1665,6 @@ class SDLMain implements Runnable {
 /**
     SDLSurface. This is what we draw on, so we need to know when it's created
     in order to do anything useful.
-
     Because of this, that's where we set up the SDL thread
 */
 class SDLSurface extends SurfaceView implements SurfaceHolder.Callback,
@@ -2325,4 +2321,3 @@ class SDLClipboardHandler implements
         SDLActivity.onNativeClipboardChanged();
     }
 }
-

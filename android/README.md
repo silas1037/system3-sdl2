@@ -6,37 +6,32 @@ Prebuilt APKs are [here](https://github.com/kichikuou/system3-sdl2/releases).
 ## Build
 Prerequisites:
 - CMake >=3.13
-- Android SDK >=28
+- Android SDK >=26
 - Android NDK >=r15c
 
 ### Using Android Studio
-Clone this repository and its submodules:
-```sh
-git clone --recurse-submodules https://github.com/kichikuou/system3-sdl2.git
-```
-
-Then open `system3-sdl2/android` directory as an Android Studio project.
+Open this directory as an Android Studio project.
 
 ### Command line build
 Configure environment variables and run the `gradlew` script in this folder.
 
-Example build instructions (for Debian buster):
+Example build instructions (for Debian Stretch):
 ```sh
 # Install necessary packages
-sudo apt install git wget unzip default-jdk-headless cmake ninja-build
+sudo apt install git wget unzip default-jdk-headless ninja-build
+sudo apt -t stretch-backports install cmake
 
 # Install Android SDK / NDK
-export ANDROID_SDK_ROOT=$HOME/android-sdk
-mkdir -p $ANDROID_SDK_ROOT/cmdline-tools
-wget https://dl.google.com/android/repository/commandlinetools-linux-7302050_latest.zip
-unzip commandlinetools-linux-7302050_latest.zip -d $ANDROID_SDK_ROOT/cmdline-tools
-mv $ANDROID_SDK_ROOT/cmdline-tools/cmdline-tools $ANDROID_SDK_ROOT/cmdline-tools/tools
-yes |$ANDROID_SDK_ROOT/cmdline-tools/tools/bin/sdkmanager --licenses
-$ANDROID_SDK_ROOT/cmdline-tools/tools/bin/sdkmanager ndk-bundle
-export ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk-bundle
+export ANDROID_HOME=$HOME/android-sdk
+export PATH=$PATH:$ANDROID_HOME/tools
+export PATH=$PATH:$ANDROID_HOME/platform-tools
+wget https://dl.google.com/android/repository/sdk-tools-linux-4333796.zip
+unzip sdk-tools-linux-4333796.zip -d $ANDROID_HOME
+yes |$ANDROID_HOME/tools/bin/sdkmanager --licenses
+$ANDROID_HOME/tools/bin/sdkmanager ndk-bundle
 
-# Check out and build system3-sdl2
-git clone --recurse-submodules https://github.com/kichikuou/system3-sdl2.git
+# Check out and build system3
+git clone https://github.com/kichikuou/system3-sdl2.git
 cd system3-sdl2/android
 ./gradlew build  # or ./gradlew installDebug if you have a connected device
 ```
@@ -60,7 +55,6 @@ Note: This form of ZIP can be used in [Kichikuou on Web](http://kichikuou.github
 ### Miscellaneous
 - You can export / import saved files using the option menu of the game list.
 - To uninstall a game, long-tap the title in the game list.
-- System menu pops up with 3-finger touch during game play.
 
 ## Known Issues
 - Installation from a ZIP containing multiple games (e.g. DPS series) does not work well.

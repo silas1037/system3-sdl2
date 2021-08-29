@@ -11,7 +11,7 @@
 #include <SDL_syswm.h>
 #include "nact.h"
 #include "ags.h"
-#include "texthook.h"
+#include "../texthook.h"
 
 extern SDL_Window* g_window;
 static int mousex, mousey, fingers;

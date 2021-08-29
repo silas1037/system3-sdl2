@@ -11,6 +11,7 @@
 #include "../common.h"
 #include "nact.h"
 #include <SDL_ttf.h>
+#include <map>
 
 // フェード処理
 static const int fade_x[16] = {0, 2, 2, 0, 1, 3, 3, 1, 1, 3, 3, 1, 0, 2, 2, 0};
@@ -51,12 +52,21 @@ private:
 	SDL_Surface* hBmpDest; // DIBSection 24bpp (最終出力先)
 
 	// フォント
-	SDL_RWops* rw_font;
-	TTF_Font* hFont16;
-	TTF_Font* hFont24;
-	TTF_Font* hFont32;
-	TTF_Font* hFont48;
-	TTF_Font* hFont64;
+	SDL_RWops* rw_font[3];
+	TTF_Font* hFont16[3];
+	TTF_Font* hFont24[3];
+	TTF_Font* hFont32[3];
+	TTF_Font* hFont48[3];
+	TTF_Font* hFont64[3];
+	std::map<int, TTF_Font*> hFontCustom[3];
+
+	SDL_RWops* rw_vwidth_font[3];
+	TTF_Font* hVWidthFont16[3];
+	TTF_Font* hVWidthFont24[3];
+	TTF_Font* hVWidthFont32[3];
+	TTF_Font* hVWidthFont48[3];
+	TTF_Font* hVWidthFont64[3];
+	std::map<int, TTF_Font*> hVWidthFontCustom[3];
 
 	// カーソル
 	SDL_Cursor* hCursor[10];
@@ -101,6 +111,7 @@ public:
 	void flush_screen(bool update);
 
 	void load_cg(int page, int transparent);
+	bool load_custom_font(int fontSize);
 
 	void set_palette(int index, int r, int g, int b);
 	uint8 get_pixel(int dest, int x, int y);
@@ -142,6 +153,16 @@ public:
 
 	bool dirty;
 
+	void set_menu_font_maxsize();
+	void set_menu_monospace(int param);
+	void set_text_monospace(int param);
+	bool has_vwidth_font(int param);
+
+	int cur_menu_monospace_font;
+	int cur_text_monospace_font;
+	int cur_menu_vwidth_font;
+	int cur_text_vwidth_font;
+
 	// ACG.DAT
 	char acg[16];
 
@@ -166,13 +187,19 @@ public:
 	int menu_dest_x;
 	int menu_dest_y;
 	int menu_font_size;
+	int menu_font_maxsize;
 	uint8 menu_font_color;
 	uint8 menu_frame_color;
 	uint8 menu_back_color;
 	bool menu_fix;
 
+	int menu_max_height;
+	int menu_max;
+
 	bool draw_hankaku;
 	bool draw_menu;
+	bool draw_menu_monospace;
+	bool draw_text_monospace;
 
 	// ウィンドウ (Bコマンド)
 	typedef struct {

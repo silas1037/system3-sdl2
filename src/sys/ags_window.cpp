@@ -248,7 +248,7 @@ void AGS::open_menu_window(int index)
 			vram[0][y + sy][x + sx] = vram[2][y][x];
 		}
 	}
-	box_line(0, sx, sy, ex, sy + menu_font_size + 3, menu_frame_color);
+	box_line(0, sx, sy, ex, sy + menu_font_maxsize + 3, menu_frame_color);
 	draw_screen(wsx, wsy, wwidth, wheight);
 }
 
@@ -266,7 +266,7 @@ void AGS::redraw_menu_window(int index, int selected)
 			vram[0][y + sy][x + sx] = vram[2][y][x];
 		}
 	}
-	box_line(0, sx, sy + (menu_font_size + 4) * selected, ex, sy + (menu_font_size + 4) * (selected + 1) - 1, menu_frame_color);
+	box_line(0, sx, sy + (menu_font_maxsize + 4) * selected, ex, sy + (menu_font_maxsize + 4) * (selected + 1) - 1, menu_frame_color);
 	draw_screen(sx, sy, width, height);
 }
 

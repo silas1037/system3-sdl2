@@ -5,10 +5,12 @@
 */
 
 #include "ags.h"
-#include <string.h>
+#include <string>
 #include "crc32.h"
 #include "../config.h"
 #include "../fileio.h"
+
+#include <cmath>
 
 extern SDL_Window* g_window;
 static SDL_Surface* display_surface;
@@ -62,31 +64,63 @@ AGS::AGS(NACT* parent, const Config& config) : nact(parent), dirty(false)
 
 	// フォント
 	TTF_Init();
-	if (!config.font_file.empty()) {
-		rw_font = open_file(config.font_file.c_str());
-		if (!rw_font)
-			parent->fatal("Cannot open font file %s", config.font_file.c_str());
-	} else {
-		rw_font = open_resource(FONT_RESOURCE_NAME, "fonts");
-		if (!rw_font)
-			parent->fatal("Cannot open default font");
-	}
-	if (rw_font) {
-		hFont16 = TTF_OpenFontRW(rw_font, 0, 16);
-		SDL_RWseek(rw_font, 0, SEEK_SET);
-		hFont24 = TTF_OpenFontRW(rw_font, 0, 24);
-		SDL_RWseek(rw_font, 0, SEEK_SET);
-		hFont32 = TTF_OpenFontRW(rw_font, 0, 32);
-		SDL_RWseek(rw_font, 0, SEEK_SET);
-		hFont48 = TTF_OpenFontRW(rw_font, 0, 48);
-		SDL_RWseek(rw_font, 0, SEEK_SET);
-		hFont64 = TTF_OpenFontRW(rw_font, 0, 64);
-		if (!hFont16 || !hFont24 || !hFont32 || !hFont48 || !hFont64) {
-			parent->fatal("TTF_OpenFontRW failed: %s", TTF_GetError());
-		}
+	for(int i = 0; i<3; i++) {
+        if (!config.font_files[i].empty()) {
+            rw_font[i] = open_file(config.font_files[i].c_str());
+            if (!rw_font[i])
+                parent->fatal("Cannot open font file %s", config.font_files[i].c_str());
+        } else {
+            rw_font[i] = open_resource(FONT_RESOURCE_NAME, "fonts");
+            if (!rw_font[i])
+                parent->fatal("Cannot open default monospace font");
+        }
+        if (rw_font[i]) {
+            hFont16[i] = TTF_OpenFontRW(rw_font[i], 0, 16);
+            SDL_RWseek(rw_font[i], 0, SEEK_SET);
+            hFont24[i] = TTF_OpenFontRW(rw_font[i], 0, 24);
+            SDL_RWseek(rw_font[i], 0, SEEK_SET);
+            hFont32[i] = TTF_OpenFontRW(rw_font[i], 0, 32);
+            SDL_RWseek(rw_font[i], 0, SEEK_SET);
+            hFont48[i] = TTF_OpenFontRW(rw_font[i], 0, 48);
+            SDL_RWseek(rw_font[i], 0, SEEK_SET);
+            hFont64[i] = TTF_OpenFontRW(rw_font[i], 0, 64);
+            SDL_RWseek(rw_font[i], 0, SEEK_SET);
+            if (!hFont16[i] || !hFont24[i] || !hFont32[i] || !hFont48[i] || !hFont64[i]) {
+                parent->fatal("TTF_OpenFontRW failed: %s", TTF_GetError());
+            }
+        }
 	}
 	if (config.no_antialias)
 		ags_setAntialiasedStringMode(0);
+
+	cur_menu_monospace_font = 0;
+	cur_menu_vwidth_font = 0;
+
+	// Loading variable-width fonts.
+	for(int i = 0; i<3; i++) {
+        if (!config.vwidth_font_files[i].empty()) {
+            rw_vwidth_font[i] = open_file(config.vwidth_font_files[i].c_str());
+            if (!rw_vwidth_font[i])
+                parent->fatal("Cannot open variable-width font file %s", config.vwidth_font_files[i].c_str());
+        }
+        if (rw_vwidth_font[i]) {
+            hVWidthFont16[i] = TTF_OpenFontRW(rw_vwidth_font[i], 0, 16);
+            SDL_RWseek(rw_vwidth_font[i], 0, SEEK_SET);
+            hVWidthFont24[i] = TTF_OpenFontRW(rw_vwidth_font[i], 0, 24);
+            SDL_RWseek(rw_vwidth_font[i], 0, SEEK_SET);
+            hVWidthFont32[i] = TTF_OpenFontRW(rw_vwidth_font[i], 0, 32);
+            SDL_RWseek(rw_vwidth_font[i], 0, SEEK_SET);
+            hVWidthFont48[i] = TTF_OpenFontRW(rw_vwidth_font[i], 0, 48);
+            SDL_RWseek(rw_vwidth_font[i], 0, SEEK_SET);
+            hVWidthFont64[i] = TTF_OpenFontRW(rw_vwidth_font[i], 0, 64);
+            SDL_RWseek(rw_vwidth_font[i], 0, SEEK_SET);
+            if (!hVWidthFont16[i] || !hVWidthFont24[i] || !hVWidthFont32[i] || !hVWidthFont48[i] || !hVWidthFont64[i]) {
+                parent->fatal("TTF_OpenFontRW failed: %s", TTF_GetError());
+            }
+        }
+	}
+	cur_menu_vwidth_font = 0;
+	cur_text_vwidth_font = 0;
 
 	// カーソル初期化
 	for(int i = 0; i < 10; i++) {
@@ -315,8 +349,16 @@ AGS::AGS(NACT* parent, const Config& config) : nact(parent), dirty(false)
 	}
 	menu_fix = false;
 
+	// Crop default max height for Intruder. This is not the recommended method (and may not even
+    // be the correct value?) but is required for compatibility with the original Intruder.
+	menu_max_height = (nact->crc32_a == CRC32_INTRUDER ? 125 : 200);
+	menu_max = 0;
+
 	draw_hankaku = false;
 	draw_menu = false;
+	draw_menu_monospace = true;
+	draw_text_monospace = true;
+	set_menu_font_maxsize();
 
 	// CG表示
 	set_cg_dest = false;
@@ -362,13 +404,34 @@ AGS::~AGS()
 	}
 
 	// フォント開放
-	if (rw_font) {
-		TTF_CloseFont(hFont16);
-		TTF_CloseFont(hFont24);
-		TTF_CloseFont(hFont32);
-		TTF_CloseFont(hFont48);
-		TTF_CloseFont(hFont64);
-		SDL_RWclose(rw_font);
+	for(int i=0; i<3; i++) {
+        if (rw_font[i]) {
+            TTF_CloseFont(hFont16[i]);
+            TTF_CloseFont(hFont24[i]);
+            TTF_CloseFont(hFont32[i]);
+            TTF_CloseFont(hFont48[i]);
+            TTF_CloseFont(hFont64[i]);
+
+            for(auto const& x : hFontCustom[i]) {
+                TTF_CloseFont(x.second);
+            }
+
+            SDL_RWclose(rw_font[i]);
+        }
+
+        if (rw_vwidth_font[i]) {
+            TTF_CloseFont(hVWidthFont16[i]);
+            TTF_CloseFont(hVWidthFont24[i]);
+            TTF_CloseFont(hVWidthFont32[i]);
+            TTF_CloseFont(hVWidthFont48[i]);
+            TTF_CloseFont(hVWidthFont64[i]);
+
+            for(auto const& x : hVWidthFontCustom[i]) {
+                TTF_CloseFont(x.second);
+            }
+
+            SDL_RWclose(rw_vwidth_font[i]);
+        }
 	}
 
 	// surface開放
@@ -380,6 +443,53 @@ AGS::~AGS()
 
 	SDL_DestroyTexture(sdlTexture);
 	SDL_DestroyRenderer(sdlRenderer);
+}
+
+// Check if the game has loaded a variable-width font into the given slot. Monospace fonts don't need
+// this, because they load the default font if none is specified.
+bool AGS::has_vwidth_font(int param) {
+    if(rw_vwidth_font[param]) return true;
+    return false;
+}
+
+bool AGS::load_custom_font(int fontSize) {
+    // Sizes 1-5 are pre-set, 0 or negative are invalid. Also check if rw_font exists. The game
+    // should have shut down on boot if it didn't load, but just to be sure.
+	if(fontSize <= 5) return false;
+
+    // Test if we have the font already. Because monospace fonts always load (using the default font),
+    // if we have a monospace example in slot 0, that means we've already gone through this process and
+    // can leave immediately.
+    std::map<int, TTF_Font*>::iterator it = hFontCustom[0].find(fontSize);
+    if(it != hFontCustom[0].end()) {
+        return true;
+    }
+
+	for(int i=0; i<3; i++) {
+        // We don't have the font yet, load it.
+        SDL_RWseek(rw_font[i], 0, SEEK_SET);
+        hFontCustom[i].insert(std::pair<int, TTF_Font*>(fontSize, TTF_OpenFontRW(rw_font[i], 0, fontSize)));
+        SDL_RWseek(rw_font[i], 0, SEEK_SET);
+
+        if (!hFontCustom[i][fontSize]) {
+            nact->fatal("TTF_OpenFontRW failed: %s", TTF_GetError());
+            return false;
+        }
+
+        // Variable-width font.
+        if(rw_vwidth_font[i]) {
+            SDL_RWseek(rw_vwidth_font[i], 0, SEEK_SET);
+            hVWidthFontCustom[i].insert(std::pair<int, TTF_Font*>(fontSize, TTF_OpenFontRW(rw_vwidth_font[i], 0, fontSize)));
+            SDL_RWseek(rw_vwidth_font[i], 0, SEEK_SET);
+
+            if (!hVWidthFontCustom[i][fontSize]) {
+                nact->fatal("TTF_OpenFontRW failed: %s", TTF_GetError());
+                return false;
+            }
+        }
+	}
+
+	return true;
 }
 
 void AGS::set_palette(int index, int r, int g, int b)
@@ -547,6 +657,38 @@ void AGS::save_screenshot(const char* path)
 	}
 
 	SDL_FreeSurface(sf);
+}
+
+void AGS::set_menu_monospace(int param) {
+    if(rw_vwidth_font[cur_menu_vwidth_font]) {
+        draw_menu_monospace = (param == 1) ? true : false;
+    }
+    else {
+        draw_menu_monospace = true; // redundancy
+
+		nact->output_console("No variable-width font assigned, cannot set menu to variable-width.\n");
+    }
+}
+
+void AGS::set_text_monospace(int param) {
+    if(rw_vwidth_font[cur_text_vwidth_font]) {
+        draw_text_monospace = (param == 1) ? true : false;
+    }
+    else {
+        draw_text_monospace = true; // redundancy
+
+		nact->output_console("No variable-width font assigned, cannot set text to variable-width.\n");
+    }
+}
+
+void AGS::set_menu_font_maxsize() {
+	TTF_Font* font = NULL;
+
+	menu_font_maxsize = menu_font_size;
+
+	// System 1 only.
+	menu_max = std::floor(menu_max_height / (menu_font_maxsize + 4));
+	if(menu_max < 1) menu_max = 1;
 }
 
 #ifdef __EMSCRIPTEN__

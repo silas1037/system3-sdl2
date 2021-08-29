@@ -9,4 +9,4 @@
         <item android:id="@+id/midi_sound"
             android:title="@string/sound_midi" />
     </group>
-</menu>
+</menu> 

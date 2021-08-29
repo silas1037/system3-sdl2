@@ -2,12 +2,12 @@
 #include <windowsx.h>
 #undef ERROR
 #include <time.h>
-#include "nact.h"
+#include "../sys/nact.h"
 #include "SDL_syswm.h"
-#include "ags.h"
-#include "mako.h"
-#include "msgskip.h"
-#include "resource.h"
+#include "../sys/ags.h"
+#include "../sys/mako.h"
+#include "../sys/msgskip.h"
+#include "../win/resource.h"
 
 extern SDL_Window* g_window;
 
@@ -73,7 +73,7 @@ INT_PTR CALLBACK TextDialogProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lPara
 			// get this pointer
 			nact = (NACT *)lParam;
 			// init dialog
-			swprintf_s(wstring, 64, L"文字列を入力してください（最大%d文字）", nact->tvar_maxlen);
+			swprintf(wstring, /*64,*/ L"文字列を入力してください（最大%d文字）", nact->tvar_maxlen);
 			SetWindowTextW(GetDlgItem(hDlg, IDC_TEXT), wstring);
 			Edit_SetText(GetDlgItem(hDlg, IDC_EDITBOX), nact->tvar[nact->tvar_index - 1]);
 			if(nact->tvar[nact->tvar_index - 1][0] == '\0') {
