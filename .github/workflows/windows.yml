@@ -40,7 +40,13 @@ jobs:
 
     - name: Build
       run: |
-        mkdir -p out/debug
-        cd out/debug
-        cmake -G"MSYS Makefiles" -DCMAKE_BUILD_TYPE=Debug ../../src/
+        mkdir -p out/release
+        cd out/release
+        cmake -G"MSYS Makefiles" -DCMAKE_BUILD_TYPE=Release ../../src/
         make
+
+    - name: Upload
+      uses: actions/upload-artifact@v2
+      with:
+        name: ${{ matrix.package }}
+        path: out/release
