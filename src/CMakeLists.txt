@@ -4,10 +4,10 @@ project(System3 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_FLAGS_RELEASE "/MT")
 set(CMAKE_CXX_FLAGS_DEBUG "/MTd")
-set(CMAKE_CXX_FLAGS "/MT")
+set(CMAKE_CXX_FLAGS "/MTd")
 set(CMAKE_C_FLAGS_RELEASE "/MT")
 set(CMAKE_C_FLAGS_DEBUG "/MTd")
-set(CMAKE_C_FLAGS "/MT")
+set(CMAKE_C_FLAGS "/MTd")
 
 # In msys, `pkg-config --libs` returns `-lmingw32` but find_library() cannot
 # find it in default search paths.
